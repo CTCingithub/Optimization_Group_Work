@@ -1,3 +1,12 @@
+"""
+Author: CTC 2801320287@qq.com
+Date: 2023-11-24 16:14:58
+LastEditors: CTC 2801320287@qq.com
+LastEditTime: 2023-11-25 14:40:16
+Description: 
+
+Copyright (c) 2023 by ${git_name_email}, All Rights Reserved. 
+"""
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -24,7 +33,7 @@ def SpearmanHeatMap(
     # ? FONTSIZES=[Text Font Size, Ticks Font Size, Title Font Size]
 
     if FONTSIZES is None:
-        FONTSIZES = [15, 12.5, 20]
+        FONTSIZES = [15, 13, 20, 12.5]
     if ROTATION is None:
         ROTATION = [90, 0]
     if FIG_SIZE is None:
@@ -67,10 +76,15 @@ def SpearmanHeatMap(
     ax.set_title(label=TITLE, fontsize=FONTSIZES[2])
 
     # …Ë÷√colorbar
-    fig.colorbar(PCOLOR_RESULT, ticks=COLORBAR_TICKS)
+    COLORBAR = fig.colorbar(PCOLOR_RESULT, ticks=COLORBAR_TICKS)
+    COLORBAR.ax.tick_params(labelsize=FONTSIZES[3])
 
     if SHOW_FIG:
         fig.show()
 
     if SAVE_FIG:
         plt.savefig("Images/00SpearmanCoeff.jpg")
+
+
+def TimeHistory(TIME, TIMEHISTORY, LEGEND=None):
+    pass
