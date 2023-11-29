@@ -1,4 +1,13 @@
 """
+Author: CTC_322 2310227@tongji.edu.cn
+Date: 2023-11-29 08:48:11
+LastEditors: CTC_322 2310227@tongji.edu.cn
+LastEditTime: 2023-11-29 13:40:32
+Description: 
+
+Copyright (c) 2023 by ${git_name_email}, All Rights Reserved. 
+"""
+"""
 Author: CTC 2801320287@qq.com
 Date: 2023-11-24 16:14:58
 LastEditors: CTC 2801320287@qq.com
@@ -30,7 +39,7 @@ def SpearmanHeatMap(
     SAVE_FIG=False,
 ):
     # Spearman相关系数可视化
-    # ? FONTSIZES=[Text Font Size, Ticks Font Size, Title Font Size]
+    # ? FONTSIZES=[Text Font Size, Ticks Font Size, Title Font Size, Colorbar Tick Font Size]
 
     if FONTSIZES is None:
         FONTSIZES = [15, 13, 20, 12.5]
@@ -86,5 +95,55 @@ def SpearmanHeatMap(
         plt.savefig("Images/00SpearmanCoeff.jpg")
 
 
-def TimeHistory(TIME, TIMEHISTORY, LEGEND=None):
-    pass
+def LossEpochPlot(
+    LOSS_HISTORY,
+    TITLE=None,
+    LABELS=None,
+    FONTSIZES=None,
+    LEGEND=None,
+    FIG_SIZE=None,
+    FIG_DPI=None,
+    LOG_YAXIS=True,
+    SHOW_FIG=True,
+    SAVE_FIG=False,
+):
+    # Plot loss-epoch diagram
+    # ? FONTSIZES=[Axis Font Size, Label Font Size, Legend Font Size, Title Font Size]
+    # ? LOSS_HISTORY=(LOSS_HISTORY_TRAIN,LOSS_HISTORY_TEST)
+
+    if TITLE is None:
+        TITLE = "Loss-Epoch Diagram"
+    if LABELS is None:
+        LABELS = ["Epoch", "Loss"]
+    if FONTSIZES is None:
+        FONTSIZES = [10, 13, 13, 15]
+    if LEGEND is None:
+        LEGEND = ["Train Set", "Test Set"]
+    if FIG_SIZE is None:
+        FIG_SIZE = (4, 3)
+    if FIG_DPI is None:
+        FIG_DPI = 500
+
+    # 调整图片大小和分辨率
+    fig = plt.figure(figsize=FIG_SIZE, dpi=FIG_DPI)
+    ax = plt.axes()
+
+    if LOG_YAXIS:
+        ax.set_yscale("log")
+
+    LOSS_HISTORY_TRAIN, LOSS_HISTORY_TEST = LOSS_HISTORY
+    TIME = np.arange(0, len(LOSS_HISTORY_TRAIN))
+
+    ax.plot(TIME, LOSS_HISTORY_TRAIN)
+    ax.plot(TIME, LOSS_HISTORY_TEST)
+    plt.xticks(fontsize=FONTSIZES[0])
+    plt.yticks(fontsize=FONTSIZES[0])
+    ax.set_xlabel(LABELS[0], fontsize=FONTSIZES[1])
+    ax.set_ylabel(LABELS[1], fontsize=FONTSIZES[1])
+    ax.legend(LEGEND, fontsize=FONTSIZES[2])
+    ax.set_title(TITLE, fontsize=FONTSIZES[3])
+
+    if SHOW_FIG:
+        fig.show()
+    if SAVE_FIG:
+        plt.savefig("Images/02AE_Loss_Epoch.jpg")
