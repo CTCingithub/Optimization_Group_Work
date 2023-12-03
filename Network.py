@@ -1,15 +1,15 @@
 '''
 Author: CTC 2801320287@qq.com
 Date: 2023-11-25 14:39:45
-LastEditors: CTC_322 2310227@tongji.edu.cn
-LastEditTime: 2023-11-29 10:53:28
+LastEditors: CTC 2801320287@qq.com
+LastEditTime: 2023-12-03 12:56:22
 Description: 
 
 Copyright (c) 2023 by ${git_name_email}, All Rights Reserved. 
 '''
 import torch
 import torch.nn as nn
-import torch.optim as optim
+from torch.linalg import pinv
 from torch.nn.utils import clip_grad_norm_
 from torch.utils.data import DataLoader, TensorDataset, random_split
 from tqdm import tqdm
@@ -47,6 +47,27 @@ def Split2Loaders(INPUT, OUTPUT, BATCHSIZE, RATIO=0.8, SHUFFLE=True):
         TensorDataset(INPUT, OUTPUT), [train_size, test_size])
     return DataLoader(train_dataset, BATCHSIZE, SHUFFLE), DataLoader(test_dataset, BATCHSIZE, SHUFFLE)
 
+def TimeSeriesDataSplit2Loaders(DATA,BATCH_SIZE=None,RATIO=0.8,SHUFFLE=True):
+    if BATCH_SIZE is None:
+        BATCH_SIZE=32
+    if SHUFFLE:
+        INDEX=torch.randperm(DATA.shape[0]-1)
+    else:
+        INDEX=torch.arange(0,DATA.shape[0]-1)
+    
+    TRAIN_SET_INDEX=INDEX[:int(RATIO*len(INDEX))]
+    TEST_SET_INDEX=INDEX[int(RATIO*len(INDEX)):]
+    TRAIN_SET_DATA_FORMMER=torch.concat([DATA[index,:].reshape(1,-1) for index in TRAIN_SET_INDEX],dim=0)[:,1:]
+    TRAIN_SET_DATA_LATTER=torch.concat([DATA[index+1,:].reshape(1,-1) for index in TRAIN_SET_INDEX],dim=0)[:,1:]
+    TEST_SET_DATA_FORMMER=torch.concat([DATA[index,:].reshape(1,-1) for index in TEST_SET_INDEX],dim=0)[:,1:]
+    TEST_SET_DATA_LATTER=torch.concat([DATA[index+1,:].reshape(1,-1) for index in TEST_SET_INDEX],dim=0)[:,1:]
+
+
+    return (DataLoader(TensorDataset(TRAIN_SET_DATA_FORMMER,TRAIN_SET_DATA_FORMMER,TRAIN_SET_DATA_LATTER)
+                       ,batch_size=BATCH_SIZE),
+            DataLoader(TensorDataset(TEST_SET_DATA_FORMMER,TEST_SET_DATA_FORMMER,TEST_SET_DATA_LATTER)
+                       ,batch_size=BATCH_SIZE),
+            TRAIN_SET_INDEX,TEST_SET_INDEX)
 
 class MyAutoencoder(nn.Module):
     # 2 Layer MLP Encoder & Decoder Attempt
@@ -138,7 +159,7 @@ def TRAIN_WITH_PROGRESS_BAR(MODEL, NUM_EPOCHS, OPTIMIZER, TRAIN_LOADER, TEST_LOA
         MODEL.eval()
         with torch.no_grad():
             for x, y in TEST_LOADER:
-                x, y = x.to(DEVICE), y.to(DEVICE)
+                x, y = x.to(device), y.to(device)
                 output = MODEL(x)
                 loss = LOSS_TYPE(output, y)
                 LOSS_TEST += loss.item()
@@ -194,7 +215,7 @@ def TRAIN_NO_PROGRESS_BAR(MODEL, NUM_EPOCHS, OPTIMIZER, TRAIN_LOADER, TEST_LOADE
         MODEL.eval()
         with torch.no_grad():
             for x, y in TEST_LOADER:
-                x, y = x.to(DEVICE), y.to(DEVICE)
+                x, y = x.to(device), y.to(device)
                 output = MODEL(x)
                 loss = LOSS_TYPE(output, y)
                 LOSS_TEST += loss.item()
@@ -202,4 +223,128 @@ def TRAIN_NO_PROGRESS_BAR(MODEL, NUM_EPOCHS, OPTIMIZER, TRAIN_LOADER, TEST_LOADE
         LOSS_TEST_AVERAGE = LOSS_TEST/len(TEST_LOADER)
         test_losses.append(LOSS_TEST_AVERAGE)
 
+    return train_losses, test_losses
+
+def DMDLoss(x,xPrime):
+    return torch.pow((xPrime - xPrime @ pinv(x) @ x),2).sum()
+
+def TRAIN_WITH_PROGRESS_BAR_KOOPMAN(MODEL, NUM_EPOCHS, OPTIMIZER, TRAIN_LOADER, TEST_LOADER, TORCH_LOSS_TYPE=nn.MSELoss(), LOSS_WEIGHT=None, DEVICE=0, GRAD_MAX=5):
+    if LOSS_WEIGHT is None:
+        LOSS_WEIGHT = [0.1,1]
+    print("PyTorch Version:", torch.__version__)
+    device = GET_DEVICE(DEVICE)
+    print("Training on", device)
+    print(
+        "====================================Start training===================================="
+    )
+    # Transfer model to selected device
+    MODEL.to(device)
+
+    # loss recorders
+    train_losses = []
+    test_losses = []
+
+    for epoch in range(NUM_EPOCHS):
+        # Switch to train mode
+        MODEL.train()
+
+        # Record loss sum in 1 epoch
+        LOSS_TRAIN = torch.tensor(0.0)
+        LOSS_TEST = torch.tensor(0.0)
+
+        # Gradient descent
+        with tqdm(
+            TRAIN_LOADER, desc=f"Epoch {epoch+1}/{NUM_EPOCHS}", unit="batch"
+        ) as t:
+            for x, y, xP in t:
+                # Forward propagation
+                x, y,xP = x.to(device), y.to(device),xP.to(device)
+                output = MODEL(x)
+                loss = LOSS_WEIGHT[0]*TORCH_LOSS_TYPE(output, y)
+                loss+=LOSS_WEIGHT[1]*DMDLoss(MODEL.encoder(x),MODEL.encoder(xP))
+
+                # Backward propagation
+                OPTIMIZER.zero_grad()
+                loss.backward()
+
+                # Gradient clipping
+                clip_grad_norm_(MODEL.parameters(), GRAD_MAX)
+
+                OPTIMIZER.step()
+                t.set_postfix(loss=loss.item())
+                LOSS_TRAIN += loss.item()
+
+        LOSS_TRAIN_AVERAGE = LOSS_TRAIN/len(TRAIN_LOADER)
+        train_losses.append(LOSS_TRAIN_AVERAGE)
+
+        # Model evaluation
+        MODEL.eval()
+        with torch.no_grad():
+            for x, y,xP in TEST_LOADER:
+                x, y,xP = x.to(device), y.to(device),xP.to(device)
+                output = MODEL(x)
+                loss = LOSS_WEIGHT[0]*TORCH_LOSS_TYPE(output, y)
+                loss+=LOSS_WEIGHT[1]*DMDLoss(MODEL.encoder(x),MODEL.encoder(xP))
+                LOSS_TEST += loss.item()
+
+        LOSS_TEST_AVERAGE = LOSS_TEST/len(TEST_LOADER)
+        test_losses.append(LOSS_TEST_AVERAGE)
+
+    print(
+        "====================================Finish training====================================\n"
+    )
+
+    return train_losses, test_losses
+
+def TRAIN_NO_PROGRESS_BAR_KOOPMAN(MODEL, NUM_EPOCHS, OPTIMIZER, TRAIN_LOADER, TEST_LOADER, TORCH_LOSS_TYPE=nn.MSELoss(), LOSS_WEIGHT=None, DEVICE=0, GRAD_MAX=5):
+    if LOSS_WEIGHT is None:
+        LOSS_WEIGHT = [0.1,1]
+    device = GET_DEVICE(DEVICE)
+    # Transfer model to selected device
+    MODEL.to(device)
+
+    # loss recorders
+    train_losses = []
+    test_losses = []
+
+    for _ in range(NUM_EPOCHS):
+        # Switch to train mode
+        MODEL.train()
+
+        # Record loss sum in 1 epoch
+        LOSS_TRAIN = torch.tensor(0.0)
+        LOSS_TEST = torch.tensor(0.0)
+
+        for x, y, xP in TRAIN_LOADER:
+            # Forward propagation
+            x, y,xP = x.to(device), y.to(device),xP.to(device)
+            output = MODEL(x)
+            loss = LOSS_WEIGHT[0]*TORCH_LOSS_TYPE(output, y)
+            loss+=LOSS_WEIGHT[1]*DMDLoss(MODEL.encoder(x),MODEL.encoder(xP))
+
+            # Backward propagation
+            OPTIMIZER.zero_grad()
+            loss.backward()
+
+            # Gradient clipping
+            clip_grad_norm_(MODEL.parameters(), GRAD_MAX)
+
+            OPTIMIZER.step()
+            LOSS_TRAIN += loss.item()
+
+        LOSS_TRAIN_AVERAGE = LOSS_TRAIN/len(TRAIN_LOADER)
+        train_losses.append(LOSS_TRAIN_AVERAGE)
+
+        # Model evaluation
+        MODEL.eval()
+        with torch.no_grad():
+            for x, y,xP in TEST_LOADER:
+                x, y,xP = x.to(device), y.to(device),xP.to(device)
+                output = MODEL(x)
+                loss = LOSS_WEIGHT[0]*TORCH_LOSS_TYPE(output, y)
+                loss+=LOSS_WEIGHT[1]*DMDLoss(MODEL.encoder(x),MODEL.encoder(xP))
+                LOSS_TEST += loss.item()
+
+        LOSS_TEST_AVERAGE = LOSS_TEST/len(TEST_LOADER)
+        test_losses.append(LOSS_TEST_AVERAGE)
     return train_losses, test_losses
