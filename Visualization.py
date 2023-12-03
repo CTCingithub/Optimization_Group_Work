@@ -147,3 +147,85 @@ def LossEpochPlot(
         fig.show()
     if SAVE_FIG:
         plt.savefig("Images/02AE_Loss_Epoch.jpg")
+
+def TestLossHeatMap(
+    DATA,
+    TITLE="Test Loss",
+    LABELS=None,
+    TEXT_COLOR_CHANGE=106.0,
+    COLORBAR_TICKS=None,
+    FONTSIZES=None,
+    ROTATION=None,
+    FIG_SIZE=None,
+    FIG_DPI=None,
+    SHOW_FIG=True,
+    SAVE_FIG=False,
+):
+    if LABELS is None:
+        LABELS = ["Hidden Layer 1", "Hidden Layer 2"]
+    # Spearman相关系数可视化
+    # ? FONTSIZES=[Text Font Size, Ticks Font Size,
+    # ? Title Font Size, Colorbar Tick Font Size, Label Font Size]
+
+    if FONTSIZES is None:
+        FONTSIZES = [7, 13, 20, 12.5, 18]
+    if ROTATION is None:
+        ROTATION = [0, 0]
+    if FIG_SIZE is None:
+        FIG_SIZE = (10, 5)
+    if FIG_DPI is None:
+        FIG_DPI = 500
+
+    LAYER_1_MIN = int(min(DATA[:, 0]))
+    LAYER_1_MAX = int(max(DATA[:, 0]))
+    LAYER_2_MIN = int(min(DATA[:, 1]))
+    LAYER_2_MAX = int(max(DATA[:, 1]))
+
+    LossValue = np.zeros((LAYER_1_MAX, LAYER_2_MAX))
+
+    for i in range(DATA.shape[0]):
+        LossValue[int(DATA[i, 0]) - 1, int(DATA[i, 1]) - 1] = DATA[i, 3]
+
+    LossValue = LossValue.T
+    LossValue = LossValue[1:, 1:]
+
+    # 调整图片大小和分辨率
+    fig = plt.figure(figsize=FIG_SIZE, dpi=FIG_DPI)
+    ax = plt.axes()
+
+    PCOLOR_RESULT = ax.pcolor(LossValue, cmap="bwr")
+    for i in np.arange(1, LossValue.shape[1] + 1):
+        for j in np.arange(1, LossValue.shape[0] + 1):
+            ax.text(
+                i - 0.5,
+                j - 0.5,
+                "{:.3f}".format(LossValue[j - 1, i - 1]),
+                color="w" if LossValue[j - 1, i - 1] < TEXT_COLOR_CHANGE else "k",
+                ha="center",
+                va="center",
+                size=FONTSIZES[0],
+            )
+
+    TICK_X = [f"{i}" for i in range(LAYER_1_MIN, LAYER_1_MAX + 1)]
+    TICK_Y = [f"{i}" for i in range(LAYER_2_MIN, LAYER_2_MAX + 1)]
+
+    # 设置横轴纵轴刻度
+    ax.set_xticks([i - LAYER_1_MIN + 0.5 for i in range(LAYER_1_MIN, LAYER_1_MAX + 1)])
+    ax.set_xticklabels(labels=TICK_X, rotation=ROTATION[0], fontsize=FONTSIZES[1])
+    ax.set_xlabel(xlabel=LABELS[0], fontsize=FONTSIZES[4])
+    ax.set_yticks([i - LAYER_2_MIN + 0.5 for i in range(LAYER_2_MIN, LAYER_2_MAX + 1)])
+    ax.set_yticklabels(labels=TICK_Y, rotation=ROTATION[1], fontsize=FONTSIZES[1])
+    ax.set_ylabel(ylabel=LABELS[1], fontsize=FONTSIZES[4])
+
+    # 设置标题
+    ax.set_title(label=TITLE, fontsize=FONTSIZES[2])
+
+    # 设置colorbar
+    COLORBAR = fig.colorbar(PCOLOR_RESULT, ticks=COLORBAR_TICKS)
+    COLORBAR.ax.tick_params(labelsize=FONTSIZES[3])
+
+    if SHOW_FIG:
+        fig.show()
+
+    if SAVE_FIG:
+        plt.savefig("Images/02AE_Comparison.jpg")
