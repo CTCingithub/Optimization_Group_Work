@@ -92,7 +92,7 @@ def SpearmanHeatMap(
         fig.show()
 
     if SAVE_FIG:
-        plt.savefig("Images/00SpearmanCoeff.jpg")
+        plt.savefig("Images/00SpearmanCoeff.jpg", bbox_inches="tight")
 
 
 def LossEpochPlot(
@@ -149,7 +149,7 @@ def LossEpochPlot(
     if SHOW_FIG:
         fig.show()
     if SAVE_FIG:
-        plt.savefig(FILE_NAME)
+        plt.savefig(FILE_NAME, bbox_inches="tight")
 
 
 def TestLossHeatMap(
@@ -235,4 +235,63 @@ def TestLossHeatMap(
         fig.show()
 
     if SAVE_FIG:
-        plt.savefig(FILE_NAME)
+        plt.savefig(FILE_NAME, bbox_inches="tight")
+
+
+def PlotEigenValues(
+    MATRIX,
+    TITLE=None,
+    LABELS=None,
+    FONTSIZES=None,
+    FIG_SIZE=None,
+    FIG_DPI=None,
+    FILE_NAME=None,
+    SHOW_FIG=True,
+    SAVE_FIG=False,
+):
+    # 绘制矩阵的特征值
+    # ? FONTSIZES=[Axis Font Size, Label Font Size, Title Font Size]
+    if TITLE is None:
+        TITLE = "Eigenvalues"
+    if LABELS is None:
+        LABELS = ["Re", "Im"]
+    if FONTSIZES is None:
+        FONTSIZES = [11, 13, 15]
+    if FIG_SIZE is None:
+        FIG_SIZE = (5, 5)
+    if FIG_DPI is None:
+        FIG_DPI = 500
+    if FILE_NAME is None:
+        FILE_NAME = "Images/06Eigenvalues.jpg"
+
+    # 调整图片大小和分辨率
+    fig = plt.figure(figsize=FIG_SIZE, dpi=FIG_DPI)
+    ax = plt.axes()
+    ax.grid(True, color="grey", linewidth=1, linestyle="-.")
+
+    # 复平面上的单位圆
+    t = np.linspace(0, 3 * np.pi, 3000)
+    ax.plot(np.cos(t), np.sin(t), linewidth=2)
+
+    for eigval in np.linalg.eigvals(MATRIX):
+        if np.abs(eigval) < 1:
+            ax.scatter(x=eigval.real, y=eigval.imag, marker="x", s=50, c="green")
+        else:
+            ax.scatter(x=eigval.real, y=eigval.imag, marker="x", s=50, c="red")
+    ax.set_aspect("equal")
+    ax.set_xticks([-1, -0.5, 0, 0.5, 1])
+    ax.set_yticks([-1, -0.5, 0, 0.5, 1])
+    ax.set_xticklabels(
+        labels=[f"{i}" for i in np.arange(-1, 1.5, 0.5)], fontsize=FONTSIZES[0]
+    )
+    ax.set_yticklabels(
+        labels=[f"{i}" for i in np.arange(-1, 1.5, 0.5)], fontsize=FONTSIZES[0]
+    )
+    ax.set_xlabel(LABELS[0], fontsize=FONTSIZES[1])
+    ax.set_ylabel(LABELS[1], fontsize=FONTSIZES[1])
+    ax.set_title(TITLE, fontsize=FONTSIZES[2])
+
+    if SHOW_FIG:
+        fig.show()
+    if SAVE_FIG:
+        plt.savefig(FILE_NAME, bbox_inches="tight")
