@@ -103,6 +103,7 @@ def LossEpochPlot(
     LEGEND=None,
     FIG_SIZE=None,
     FIG_DPI=None,
+    FILE_NAME=None,
     LOG_YAXIS=True,
     SHOW_FIG=True,
     SAVE_FIG=False,
@@ -123,6 +124,8 @@ def LossEpochPlot(
         FIG_SIZE = (4, 3)
     if FIG_DPI is None:
         FIG_DPI = 500
+    if FILE_NAME is None:
+        FILE_NAME = "Images/02AE_Loss_Epoch.jpg"
 
     # 调整图片大小和分辨率
     fig = plt.figure(figsize=FIG_SIZE, dpi=FIG_DPI)
@@ -146,7 +149,8 @@ def LossEpochPlot(
     if SHOW_FIG:
         fig.show()
     if SAVE_FIG:
-        plt.savefig("Images/02AE_Loss_Epoch.jpg")
+        plt.savefig(FILE_NAME)
+
 
 def TestLossHeatMap(
     DATA,
@@ -158,6 +162,7 @@ def TestLossHeatMap(
     ROTATION=None,
     FIG_SIZE=None,
     FIG_DPI=None,
+    FILE_NAME=None,
     SHOW_FIG=True,
     SAVE_FIG=False,
 ):
@@ -175,6 +180,8 @@ def TestLossHeatMap(
         FIG_SIZE = (10, 5)
     if FIG_DPI is None:
         FIG_DPI = 500
+    if FILE_NAME is None:
+        FILE_NAME = "Images/02AE_Comparison.jpg"
 
     LAYER_1_MIN = int(min(DATA[:, 0]))
     LAYER_1_MAX = int(max(DATA[:, 0]))
@@ -228,4 +235,4 @@ def TestLossHeatMap(
         fig.show()
 
     if SAVE_FIG:
-        plt.savefig("Images/02AE_Comparison.jpg")
+        plt.savefig(FILE_NAME)

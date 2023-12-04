@@ -1,8 +1,8 @@
 '''
 Author: CTC 2801320287@qq.com
 Date: 2023-11-25 14:39:45
-LastEditors: CTC 2801320287@qq.com
-LastEditTime: 2023-12-03 12:56:22
+LastEditors: CTC_322 2310227@tongji.edu.cn
+LastEditTime: 2023-12-04 00:17:10
 Description: 
 
 Copyright (c) 2023 by ${git_name_email}, All Rights Reserved. 
@@ -261,7 +261,7 @@ def TRAIN_WITH_PROGRESS_BAR_KOOPMAN(MODEL, NUM_EPOCHS, OPTIMIZER, TRAIN_LOADER, 
                 x, y,xP = x.to(device), y.to(device),xP.to(device)
                 output = MODEL(x)
                 loss = LOSS_WEIGHT[0]*TORCH_LOSS_TYPE(output, y)
-                loss+=LOSS_WEIGHT[1]*DMDLoss(MODEL.encoder(x),MODEL.encoder(xP))
+                loss+=LOSS_WEIGHT[1]*DMDLoss(MODEL.encoder(x).T,MODEL.encoder(xP).T)
 
                 # Backward propagation
                 OPTIMIZER.zero_grad()
@@ -284,7 +284,7 @@ def TRAIN_WITH_PROGRESS_BAR_KOOPMAN(MODEL, NUM_EPOCHS, OPTIMIZER, TRAIN_LOADER, 
                 x, y,xP = x.to(device), y.to(device),xP.to(device)
                 output = MODEL(x)
                 loss = LOSS_WEIGHT[0]*TORCH_LOSS_TYPE(output, y)
-                loss+=LOSS_WEIGHT[1]*DMDLoss(MODEL.encoder(x),MODEL.encoder(xP))
+                loss+=LOSS_WEIGHT[1]*DMDLoss(MODEL.encoder(x).T,MODEL.encoder(xP).T)
                 LOSS_TEST += loss.item()
 
         LOSS_TEST_AVERAGE = LOSS_TEST/len(TEST_LOADER)
@@ -320,7 +320,7 @@ def TRAIN_NO_PROGRESS_BAR_KOOPMAN(MODEL, NUM_EPOCHS, OPTIMIZER, TRAIN_LOADER, TE
             x, y,xP = x.to(device), y.to(device),xP.to(device)
             output = MODEL(x)
             loss = LOSS_WEIGHT[0]*TORCH_LOSS_TYPE(output, y)
-            loss+=LOSS_WEIGHT[1]*DMDLoss(MODEL.encoder(x),MODEL.encoder(xP))
+            loss+=LOSS_WEIGHT[1]*DMDLoss(MODEL.encoder(x).T,MODEL.encoder(xP).T)
 
             # Backward propagation
             OPTIMIZER.zero_grad()
@@ -342,7 +342,7 @@ def TRAIN_NO_PROGRESS_BAR_KOOPMAN(MODEL, NUM_EPOCHS, OPTIMIZER, TRAIN_LOADER, TE
                 x, y,xP = x.to(device), y.to(device),xP.to(device)
                 output = MODEL(x)
                 loss = LOSS_WEIGHT[0]*TORCH_LOSS_TYPE(output, y)
-                loss+=LOSS_WEIGHT[1]*DMDLoss(MODEL.encoder(x),MODEL.encoder(xP))
+                loss+=LOSS_WEIGHT[1]*DMDLoss(MODEL.encoder(x).T,MODEL.encoder(xP).T)
                 LOSS_TEST += loss.item()
 
         LOSS_TEST_AVERAGE = LOSS_TEST/len(TEST_LOADER)
