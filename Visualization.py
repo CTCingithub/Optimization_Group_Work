@@ -19,6 +19,7 @@ Copyright (c) 2023 by ${git_name_email}, All Rights Reserved.
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+from utils import *
 
 mpl.rcParams["font.family"] = "SimHei"
 plt.rcParams["axes.unicode_minus"] = False
@@ -291,6 +292,102 @@ def PlotEigenValues(
     ax.set_ylabel(LABELS[1], fontsize=FONTSIZES[1])
     ax.set_title(TITLE, fontsize=FONTSIZES[2])
 
+    if SHOW_FIG:
+        fig.show()
+    if SAVE_FIG:
+        plt.savefig(FILE_NAME, bbox_inches="tight")
+
+
+def ResultPlot(
+    REAL_TIME_HISTORY,
+    FORCAST_TIME_HISTORY,
+    RMSE,
+    TITLE=None,
+    LABELS=None,
+    T_TICKS=None,
+    T_TICK_LABELS=None,
+    FONTSIZES=None,
+    LEGEND=None,
+    FIG_SIZE=None,
+    FIG_DPI=None,
+    FILE_NAME=None,
+    SHOW_FIG=True,
+    SAVE_FIG=False,
+):
+    # Plot loss-epoch diagram
+    # ? FONTSIZES=[Axis Font Size, Label Font Size, Legend Font Size, Title Font Size]
+    # ? LOSS_HISTORY=(LOSS_HISTORY_TRAIN,LOSS_HISTORY_TEST)
+
+    if TITLE is None:
+        TITLE = "Model Accurancy"
+    if LABELS is None:
+        LABELS = [
+            "Temp",
+            "Dew Point Temp",
+            "Rel Hum",
+            "Wind Spd",
+            "Stn Press",
+        ]
+    if T_TICKS is None:
+        T_TICKS = [
+            Time2SerialNum(YEAR=2017, MONTH=i, DAY=1, HOUR=0) for i in range(1, 13)
+        ]
+    if T_TICK_LABELS is None:
+        T_TICK_LABELS = [
+            "Jan",
+            "Feb",
+            "Mar",
+            "Apr",
+            "May",
+            "Jun",
+            "Jul",
+            "Aug",
+            "Sept",
+            "Oct",
+            "Nov",
+            "Dec",
+        ]
+    if FONTSIZES is None:
+        FONTSIZES = [8, 10, 8, 15]
+    if LEGEND is None:
+        LEGEND = ["Real", "Model"]
+    if FIG_SIZE is None:
+        FIG_SIZE = (16, 4)
+    if FIG_DPI is None:
+        FIG_DPI = 500
+    if FILE_NAME is None:
+        FILE_NAME = "Images/06FinalResult.jpg"
+
+    fig, ax = plt.subplots(3, 2, figsize=FIG_SIZE, dpi=FIG_DPI)
+    temp = np.arange(6).reshape(3, 2)
+    for i in range(5):
+        loc_x, loc_y = np.where(temp == i)
+        loc_x = int(loc_x)
+        loc_y = int(loc_y)
+        ax[loc_x, loc_y].plot(
+            np.arange(0, REAL_TIME_HISTORY.shape[0]), REAL_TIME_HISTORY[:, i]
+        )
+        ax[loc_x, loc_y].plot(
+            np.arange(0, REAL_TIME_HISTORY.shape[0]), FORCAST_TIME_HISTORY[:, i]
+        )
+        ax[loc_x, loc_y].set_xticks(T_TICKS)
+        ax[loc_x, loc_y].set_xticklabels(T_TICK_LABELS, fontsize=FONTSIZES[0])
+        ax[loc_x, loc_y].set_ylabel(LABELS[i], rotation=90, fontsize=FONTSIZES[1])
+        ax[loc_x, loc_y].legend(LEGEND, fontsize=FONTSIZES[2])
+
+    RMSE_LABELS = [f"{i} RMSE" for i in LABELS]
+    ax[2, 1].table(
+        cellText=RMSE.reshape(1, -1),
+        colLabels=RMSE_LABELS,
+        loc="center",
+        cellLoc="center",
+    )
+    ax[2, 1].axis("tight")
+    ax[2, 1].axis("off")
+    ax[2, 1].set_title("RMSE", fontsize=FONTSIZES[2])
+
+    fig.suptitle(TITLE, fontsize=FONTSIZES[3])
+    fig.tight_layout()
     if SHOW_FIG:
         fig.show()
     if SAVE_FIG:
